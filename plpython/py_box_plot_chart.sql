@@ -1,9 +1,13 @@
-CREATE OR REPLACE FUNCTION home_project.py_basic_plot_chart(
-	p_x text, 
+-- FUNCTION: home_project.py_box_plot_chart(text, text, text, text, double precision, text)
+
+-- DROP FUNCTION home_project.py_box_plot_chart(text, text, text, text, double precision, text);
+
+CREATE OR REPLACE FUNCTION home_project.py_box_plot_chart(
 	p_y text,
 	p_title text,
 	p_legend text,
 	p_sequence text,
+	p_whiskers_legnth double precision,
 	p_option text)
 RETURNS text
     LANGUAGE 'plpythonu'
@@ -16,6 +20,7 @@ import base64
 import io
 import StringIO
 import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
 import numpy as np
@@ -46,7 +51,11 @@ class MyChartOption:
                 return False
         return True
 
-def drawPlotChart(X, Y, title, legend, sequence, options):
+def drawBoxPlotChart(Y, title, legend, sequence, 
+					 whiskers_legnth = 1.5, 
+					 options = None):
+    imgdata = StringIO.StringIO()
+
     if legend.size != 0:
         u_legend = np.unique(legend)
         u_legend_cnt = len(u_legend)
@@ -82,7 +91,8 @@ def drawPlotChart(X, Y, title, legend, sequence, options):
             color_map = options.getOption('color.pallete')
         elif (options.isExist('color.map')):
             color_norm = colors.Normalize(vmin=0, vmax=u_legend_cnt)
-            scalar_map = cmx.ScalarMappable(norm=color_norm, cmap = options.getOption('color.map'))       
+            scalar_map = cmx.ScalarMappable(norm=color_norm, 
+                                cmap = options.getOption('color.map'))       
             for i in range(u_legend_cnt):
                 color_map.append(scalar_map.to_rgba(i))
     """
@@ -91,10 +101,25 @@ def drawPlotChart(X, Y, title, legend, sequence, options):
     if options.isExist('axes'):
         axes_alpha = options.getOption('axes.alpha')
         axes_format = options.getOption('axes.format')
+        axes_marker = options.getOption('axes.marker')
         axes_markersize = options.getOption('axes.markersize')
         axes_linewidth = options.getOption('axes.linewidth')
-  
-    imgdata = StringIO.StringIO()
+        if options.isExist('axes.vertical'):
+            axes_vertical = 1 
+        else: 
+            if options.getOption('axes.vertical') == 'true':
+                axes_vertical = 1
+            else:
+                axes_vertical = 0
+    
+    """
+    Set x-axis options
+    """
+    if options.isExist('x_axis'):
+        x_axis_rotation = options.getOption('x_axis.rotation')
+        x_axis_fontsize = options.getOption('x_axis.fontsize')
+        
+        
     fig, ax = plt.subplots()
     fig.set_size_inches(fig_size_x, fig_size_y)  
     ax.set_title(title)
@@ -107,37 +132,60 @@ def drawPlotChart(X, Y, title, legend, sequence, options):
     else:
         seq = np.arange(u_legend_cnt)
         sorted_seq_index = np.arange(u_legend_cnt)
-        
-    for i in sorted_seq_index:
-        subX = X[np.where(legend==u_legend[i])]
-        subY = Y[np.where(legend==u_legend[i])]
 
-        ax.plot(subX, subY, axes_format, 
-                ms=axes_markersize, 
-                lw=axes_linewidth, 
-                alpha=axes_alpha, 
-                color=color_map[seq[i]],
-                label=u_legend[i])
-    ax.legend(loc = legend_loc, fontsize='x-small')
+    data = []
+    sorted_legend = []
+    if u_legend_cnt > 1:
+        for i in sorted_seq_index:
+            subY = Y[np.where(legend==u_legend[i])]
+            data.append(subY)
+            sorted_legend.append(u_legend[i])
+    else:
+        data.append(Y)
+        sorted_legend.append(title)
+        
+        
+    bp = ax.boxplot(data, 
+                    notch=0, 
+                    sym=axes_marker, 
+                    patch_artist=True,
+                    vert=axes_vertical, 
+                    whis=whiskers_legnth)
+    
+    for i in range(u_legend_cnt):
+        box = bp['boxes'][i]
+        box.set_facecolor(color_map[i])
+    
+    ax.set_xticklabels(sorted_legend, 
+                       rotation=x_axis_rotation, 
+                       fontsize=x_axis_fontsize)
+    
     plt.savefig(imgdata, format='png')
     imgdata.seek(0)
     return base64.b64encode(imgdata.buf)
+			  
 
-X = np.array(p_x.split(','))
-Y = np.array(p_y.split(','))
-title = p_title
-if p_legend:
-	legend = np.array(p_legend.split(','))
-else:
-	legend = np.array([])
-
+Y = np.array(p_y.split(',')).astype('float')
+legend = np.array(p_legend.split(','))
 if p_sequence:
-    seq = np.array(p_sequence.split(','))
+	sequence = np.array(p_sequence.split(',')).astype('int')
 else:
-    seq = np.array([])
+	sequence = np.array([])
+
+title = p_title
+
 if p_option:
 	opt = MyChartOption(p_option)
 else:
 	opt = None
-return drawPlotChart(X, Y, title, legend, seq, opt)
+
+if p_whiskers_legnth:
+	whiskers = p_whiskers_legnth
+else:
+	whiskers = 1.5
+return drawBoxPlotChart(Y, title, legend, sequence, whiskers, opt)
 $BODY$;
+
+ALTER FUNCTION home_project.py_box_plot_chart(text, text, text, text, double precision, text)
+    OWNER TO gpadmin;
+

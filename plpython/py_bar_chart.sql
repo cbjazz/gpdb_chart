@@ -1,5 +1,9 @@
-CREATE OR REPLACE FUNCTION home_project.py_basic_plot_chart(
-	p_x text, 
+-- FUNCTION: home_project.py_ma_band_plot_chart(text, text, text, integer, double precision, text)
+
+-- DROP FUNCTION home_project.py_ma_band_plot_chart(text, text, text, integer, double precision, text);
+
+CREATE OR REPLACE FUNCTION home_project.py_bar_chart(
+	p_x text,
 	p_y text,
 	p_title text,
 	p_legend text,
@@ -46,7 +50,31 @@ class MyChartOption:
                 return False
         return True
 
-def drawPlotChart(X, Y, title, legend, sequence, options):
+def mergeLegend(X, Y, legends):
+    unique_x = np.unique(X)
+    unique_legend = np.unique(legends)
+    
+    df_merge = pd.DataFrame(
+        {
+            'X': unique_x
+        }
+    )
+
+    for legend in unique_legend:
+        df = pd.DataFrame (
+            {
+                'X' : X[np.where(legends==legend)], 
+                'Y_' + legend : Y[np.where(legends==legend)]
+            }
+        )
+        df_merge = df_merge.merge(df, how='left', on=['X'])
+        
+    return df_merge
+
+def drawBarChart(X, Y, title, legend, sequence,  
+					 options = None):
+    imgdata = StringIO.StringIO()
+
     if legend.size != 0:
         u_legend = np.unique(legend)
         u_legend_cnt = len(u_legend)
@@ -93,8 +121,8 @@ def drawPlotChart(X, Y, title, legend, sequence, options):
         axes_format = options.getOption('axes.format')
         axes_markersize = options.getOption('axes.markersize')
         axes_linewidth = options.getOption('axes.linewidth')
-  
-    imgdata = StringIO.StringIO()
+        axes_barwidth = options.getOption('axes.barwidth')
+        
     fig, ax = plt.subplots()
     fig.set_size_inches(fig_size_x, fig_size_y)  
     ax.set_title(title)
@@ -108,36 +136,41 @@ def drawPlotChart(X, Y, title, legend, sequence, options):
         seq = np.arange(u_legend_cnt)
         sorted_seq_index = np.arange(u_legend_cnt)
         
+    df = mergeLegend(X, Y, legend) 
+    
+    idx = 0 
     for i in sorted_seq_index:
-        subX = X[np.where(legend==u_legend[i])]
-        subY = Y[np.where(legend==u_legend[i])]
-
-        ax.plot(subX, subY, axes_format, 
-                ms=axes_markersize, 
-                lw=axes_linewidth, 
+        subX = df['X']
+        subY = df['Y_' + u_legend[i]]
+        
+        ax.bar(np.array(df.index.tolist()) + (axes_barwidth * idx), subY, axes_barwidth, 
                 alpha=axes_alpha, 
                 color=color_map[seq[i]],
                 label=u_legend[i])
-    ax.legend(loc = legend_loc, fontsize='x-small')
+        idx = idx + 1
+    ax.set_xticks(np.array(df.index.tolist()) + axes_barwidth/u_legend_cnt)    
+    ax.set_xticklabels(df['X'])
+        
+    ax.legend(loc = legend_loc, fontsize='x-small')    
     plt.savefig(imgdata, format='png')
     imgdata.seek(0)
     return base64.b64encode(imgdata.buf)
-
+			  
 X = np.array(p_x.split(','))
-Y = np.array(p_y.split(','))
-title = p_title
-if p_legend:
-	legend = np.array(p_legend.split(','))
-else:
-	legend = np.array([])
-
+Y = np.array(p_y.split(',')).astype('float')
+legend = np.array(p_legend.split(','))
 if p_sequence:
-    seq = np.array(p_sequence.split(','))
+	sequence = np.array(p_sequence.split(',')).astype('int')
 else:
-    seq = np.array([])
+	sequence = np.array([])
+
+title = p_title
+
 if p_option:
 	opt = MyChartOption(p_option)
 else:
 	opt = None
-return drawPlotChart(X, Y, title, legend, seq, opt)
+
+return drawBarChart(X, Y, title, legend, sequence, opt)
 $BODY$;
+
