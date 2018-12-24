@@ -99,3 +99,10 @@ WHERE code IN ('090435.KS', '078520.KS', '095570.KS')
     AND s_date >= '2017-11-01' AND s_date < '2017-12-01'
 ) as a;
 ```
+
+Chart Options:
+* Default Options : https://matplotlib.org/tutorials/introductory/customizing.html
+* Additional Options : 
+    - style
+    - axes.color_map
+    - axes.color_pallete
