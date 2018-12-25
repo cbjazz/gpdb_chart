@@ -12,11 +12,11 @@ SELECT string_agg(s_close::text, ',' order by s_date) Y,
 	string_agg((s_date - '2017-01-01'::date)::text, ',' order by s_date) X,
 	string_agg(code, ',' order by s_date) legend,
 	'{
-    "style":"bmh", 
-    "fig": {"x_size": 12, "y_size": 6}, 
-    "legend":{"loc":"upper right"},
-    "axes":{"format":"o-","alpha":0.7, "markerisze":5, "linewidth":2}, 
-    "color":{"map":"viridis"}
+    "figure.figsize": [12.0, 6.0], 
+    "legend.loc":"upper right",
+    "lines.marker":"o",
+    "axes.color_map":"PuOr",
+    "axes.color_alpha":0.7
     }' opt
 FROM stock.price
 WHERE code = '090435.KS'
@@ -32,13 +32,13 @@ SELECT string_agg(s_close::text, ',' order by s_date) Y,
 	code title,
 	'{
     "style":"bmh", 
-    "fig": {"x_size": 12, "y_size": 6}, 
-    "legend":{"loc":"upper right"},
-    "axes":{"format":"-","alpha":0.7, "markerisze":5, "linewidth":2}, 
-    "color":{"pallete":["#173F5F", "#ED553B"]},
-    "band":{"fill_color":"#F6D55C", "fill_alpha":0.5}
+    "figure.figsize": [12.0, 6.0], 
+    "legend.loc":"upper right",
+    "axes.color_pallete":["#173F5F", "#20639B", "#ED553B", "#3CAEA3", "#F6D55C"],
+    "axes.color_alpha":0.7,
+    "axes.band_color" : "#F6D55C",
+    "axes.band_color_alpha" : 0.3
     }' opt
-SELECT *
 FROM stock.price
 WHERE code IN ('000240.KS', '090435.KS')
 GROUP BY code
@@ -57,17 +57,12 @@ FROM (
 SELECT string_agg(s_close::text, ',' order by s_date) Y,
     string_agg(code, ',' order by s_date) legend,
     '{
-    "style":"seaborn-notebook", 
-    "fig": {"x_size": 12, "y_size": 6}, 
-    "legend":{"loc":"upper right"},
-    "axes":{"vertical":"true",  
-            "marker":"+"}, 
-    "color":{"pallete":["#173F5F", "#20639B", "#3CAEA3", "#F6D55C", "#ED553B"]},
-    "x_axis":{"rotation":0, 
-            "fontsize":12},
-    "box":{"boxes":{"color":"black"}, 
-            "whiskers":{"color":"black"}, 
-            "fliers":{"color":"black"}}
+    "style":"bmh", 
+    "figure.figsize": [12.0, 6.0], 
+    "legend.loc":"upper right",
+    "lines.marker":"",
+    "axes.color_map":"PuOr",
+    "axes.color_alpha":0.7
     }' opt
 FROM stock.price
 WHERE code IN ('090435.KS', '078520.KS', '095570.KS')
@@ -89,10 +84,11 @@ SELECT
     string_agg(code, ',' order by s_date) legend,
     '{
     "style":"bmh", 
-    "fig": {"x_size": 12, "y_size": 6}, 
-    "legend":{"loc":"upper right"},
-    "axes":{"format":"o-","alpha":0.7, "markerisze":5, "barwidth":0.2}, 
-    "color":{"map":"viridis"}
+    "figure.figsize": [13.0, 6.0], 
+    "legend.loc":"upper right",
+    "lines.marker":"o",
+    "axes.color_pallete": ["#ED553B", "#20639B", "#3CAEA3", "#F6D55C"],
+    "axes.color_alpha":0.7
     }' opt
 FROM stock.price
 WHERE code IN ('090435.KS', '078520.KS', '095570.KS')
