@@ -18,141 +18,128 @@ import StringIO
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
+from cycler import cycler 
 import numpy as np
 import pandas as pd
 import json
 
-class MyChartOption:
-    def __init__(self, jsonString):
-        self.json = json.loads(jsonString)
+'''
+Set chart options
+'''
+OPT_STYLE = 'style'
+OPT_COLOR_MAP = 'axes.color_map'
+OPT_COLOR_PALLETE = 'axes.color_pallete'
+OPT_COLOR_ALPHA = 'axes.color_alpha'
+OPT_PROP_CYCLE = 'axes.prop_cycle'
+OPT_BAR_WIDTH = 'axes.bar_width'
+OPT_BAND_COLOR = 'axes.band_color'
+OPT_BAND_COLOR_ALPHA = 'axes.band_color_alpha'
 
-    def getOption(self, option_name):
-        tokens = option_name.split('.')
-        value = self.json
-        for token in tokens:
-            if token in value:
-                value = value[token]
-            else: 
-                return None
-        return value
+non_mpl_options = [
+    OPT_STYLE, 
+    OPT_COLOR_MAP, 
+    OPT_COLOR_PALLETE, 
+    OPT_COLOR_ALPHA, 
+    OPT_BAR_WIDTH,
+    OPT_BAND_COLOR,
+    OPT_BAND_COLOR_ALPHA
+]
+
+def set_color_map(values, alpha=1.0, max_legend_cnt=1):
+    color_map = []
+    color_norm = colors.Normalize(vmin=0, vmax=max_legend_cnt)
+    scalar_map = cmx.ScalarMappable(norm=color_norm,
+                                   cmap=values)
+    color_map = [scalar_map.to_rgba(i, alpha=alpha) for i in range(max_legend_cnt)]
+    return color_map
+
+def set_cycler(json_dic,max_legend_cnt=1): 
+    # Set color cycler
+    color_map = []
+    alpha = 1.0
+    if OPT_COLOR_ALPHA in json_dic.keys():
+        alpha = json_dic[OPT_COLOR_ALPHA]
+    if OPT_COLOR_MAP in json_dic.keys():
+        color_map = set_color_map(json_dic[OPT_COLOR_MAP], alpha, max_legend_cnt)
+    if OPT_COLOR_PALLETE in json_dic.keys():
+        color_map = [colors.to_rgba(val, alpha=alpha) 
+					 for val in json_dic[OPT_COLOR_PALLETE]]
+    if color_map:
+        mpl.rcParams[OPT_PROP_CYCLE] = cycler(color = color_map)
     
-    def isExist(self, option_name):
-        tokens = option_name.split('.')
-        value = self.json
-        for token in tokens:
-            if token in value:
-                value = value[token]
-            else: 
-                return False
-        return True
-def calculateBand(df, window_size=1, sigma=2.0):
+def set_mpl_option(json_dic):
+    for key in json_dic.keys():
+        if key not in non_mpl_options:
+            mpl.rcParams[key] = json_dic[key]
+
+def calculate_band(df, window_size=1, sigma=2.0):
     df['MA'] = df['Y'].rolling(window=window_size).mean()
     df['STD'] = df['Y'].rolling(window=window_size).std()
     df['U_band'] = df['MA'] + (df['STD'] * sigma)
     df['L_band'] = df['MA'] - (df['STD'] * sigma)
     return df
 	
-def drawMABandPlotChart(X, Y, title, window_size, sigma, options):
-    """
-    Set style option
-    """
-    if options.isExist('style'):
-        plt.style.use(options.getOption('style'))
-    
-    """
-    Set figure options
-    """
-    if options.isExist('fig'):
-        fig_size_x = options.getOption('fig.x_size')
-        fig_size_y = options.getOption('fig.y_size')
-        
-    """
-    Set legend options
-    """
-    if options.isExist('legend'):
-        legend_loc = options.getOption('legend.loc')
+def draw_ma_band_plot_chart(x, y, title, window_size, sigma, options):
+    imgdata = StringIO.StringIO()
 
-    """
-    Set color map
-    """
-    if options.isExist('color'):
-        color_map = []
-        if (options.isExist('color.pallete')):
-            color_map = options.getOption('color.pallete')
-        elif (options.isExist('color.map')):
-            color_norm = colors.Normalize(vmin=0, vmax=3)
-            scalar_map = cmx.ScalarMappable(norm=color_norm, cmap = options.getOption('color.map'))       
-            for i in range(3):
-                color_map.append(scalar_map.to_rgba(i))
-    """
-    Set axes options
-    """
-    if options.isExist('axes'):
-        axes_alpha = options.getOption('axes.alpha')
-        axes_format = options.getOption('axes.format')
-        axes_markersize = options.getOption('axes.markersize')
-        axes_linewidth = options.getOption('axes.linewidth')
+    # Set style options
+    option_dict = json.loads(options)
+    
+    if OPT_STYLE in option_dict.keys():
+        plt.style.use(option_dict[OPT_STYLE])
+
+    if (OPT_COLOR_MAP in option_dict.keys()
+        or OPT_COLOR_PALLETE in option_dict.keys()):
+        set_cycler(option_dict, 3)
         
-    """
-    Set band options
-    """
-    if options.isExist('band'):
-        band_fill_color = options.getOption('band.fill_color')
-        band_fill_alpha = options.getOption('band.fill_alpha')
+    if (OPT_BAND_COLOR in option_dict.keys()):
+        band_color = option_dict[OPT_BAND_COLOR]
+    else:
+        band_color = 'y'
+    
+    band_alpha = 0.5
+    if (OPT_BAND_COLOR_ALPHA in option_dict.keys()):
+        band_alpha = option_dict[OPT_BAND_COLOR_ALPHA]
+        
+    set_mpl_option(option_dict)
         
     frame = {
-        'X': X, 
-        'Y': Y
+        'X': x, 
+        'Y': y
     }
     
     df = pd.DataFrame(frame, columns=frame.keys())
     
-    mv_df = calculateBand(df, window_size, sigma)
-
-    imgdata = StringIO.StringIO()
-    fig, ax = plt.subplots()
-    fig.set_size_inches(fig_size_x, fig_size_y)  
-    ax.set_title(title)
+    mv_df = calculate_band(df, window_size, sigma)
         
-    ax.fill_between(mv_df['X'], 
-                    mv_df['U_band'], 
-                    mv_df['L_band'], 
-                    alpha=band_fill_alpha,
-                    color=band_fill_color)
+    fig, ax = plt.subplots()
+    ax.set_title(title)
 
     # Draw 'Y' values
     ax.plot(mv_df['X'], mv_df['Y'], 
-            axes_format,
-            lw=axes_linewidth, 
-            alpha=axes_alpha,
-            color=color_map[0],
             label='Y-value')
     
     # Draw Moving Average
     ax.plot(mv_df['X'], mv_df['MA'], 
-        axes_format,
-        lw=axes_linewidth, 
-        alpha=axes_alpha,
-        color=color_map[1],
         label=str(window_size) + ' MA')
     
-    ax.legend(loc = legend_loc, fontsize='small')
+    ax.fill_between(mv_df['X'], 
+                    mv_df['U_band'], 
+                    mv_df['L_band'], 
+                    facecolor = band_color,
+                    alpha = band_alpha)
+    
+    ax.legend()
     plt.savefig(imgdata, format='png')
     imgdata.seek(0)
     return base64.b64encode(imgdata.buf)
 					  
 X = np.array(p_x.split(',')).astype('float')
 Y = np.array(p_y.split(',')).astype('float')
-title = p_title
-
-if p_option:
-	opt = MyChartOption(p_option)
-else:
-	opt = None
 
 if p_sigma:
 	sigma = p_sigma
 else:
 	sigma = 2.0
-return drawMABandPlotChart(X, Y, title, p_window_size, sigma, opt)
+return draw_ma_band_plot_chart(X, Y, p_title, p_window_size, sigma, p_option)
 $BODY$;

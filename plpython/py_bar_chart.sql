@@ -22,35 +22,66 @@ import StringIO
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
+from cycler import cycler 
 import numpy as np
-import pandas as pd
 import json
+import pandas as pd
 
-class MyChartOption:
-    def __init__(self, jsonString):
-        self.json = json.loads(jsonString)
+"""
+Set chart options
+"""
+OPT_STYLE = 'style'
+OPT_COLOR_MAP = 'axes.color_map'
+OPT_COLOR_PALLETE = 'axes.color_pallete'
+OPT_COLOR_ALPHA = 'axes.color_alpha'
+OPT_PROP_CYCLE = 'axes.prop_cycle'
+OPT_BAR_WIDTH = 'axes.bar_width'
+OPT_BAND_COLOR = 'axes.band_color'
+OPT_BAND_COLOR_ALPHA = 'axes.band_color_alpha'
 
-    def getOption(self, option_name):
-        tokens = option_name.split('.')
-        value = self.json
-        for token in tokens:
-            if token in value:
-                value = value[token]
-            else: 
-                return None
-        return value
+non_mpl_options = [
+    OPT_STYLE, 
+    OPT_COLOR_MAP, 
+    OPT_COLOR_PALLETE, 
+    OPT_COLOR_ALPHA, 
+    OPT_BAR_WIDTH,
+    OPT_BAND_COLOR,
+    OPT_BAND_COLOR_ALPHA
+]
+
+def set_color_map(values, alpha=1.0, max_legend_cnt=1):
+    color_map = []
+    color_norm = colors.Normalize(vmin=0, vmax=max_legend_cnt)
+    scalar_map = cmx.ScalarMappable(norm=color_norm,
+                                   cmap=values)
+    color_map = [scalar_map.to_rgba(i, alpha=alpha) for i in range(max_legend_cnt)]
+    return color_map
+
+def set_cycler(json_dic,max_legend_cnt=1): 
+    # Set color cycler
+    color_map = []
+    alpha = 1.0
+    if OPT_COLOR_ALPHA in json_dic.keys():
+        alpha = json_dic[OPT_COLOR_ALPHA]
+    if OPT_COLOR_MAP in json_dic.keys():
+        color_map = set_color_map(json_dic[OPT_COLOR_MAP], alpha, max_legend_cnt)
+    if OPT_COLOR_PALLETE in json_dic.keys():
+        color_map = [colors.to_rgba(val, alpha=alpha) for val in json_dic[OPT_COLOR_PALLETE]]
+    if color_map:
+        mpl.rcParams[OPT_PROP_CYCLE] = cycler(color = color_map)
     
-    def isExist(self, option_name):
-        tokens = option_name.split('.')
-        value = self.json
-        for token in tokens:
-            if token in value:
-                value = value[token]
-            else: 
-                return False
-        return True
+def set_mpl_option(json_dic):
+    for key in json_dic.keys():
+        if key not in non_mpl_options:
+            mpl.rcParams[key] = json_dic[key]
+            
+def set_bar_width(x_size, x_cnt, legend_cnt):
+    return (x_size / (x_cnt * legend_cnt))*2
 
-def mergeLegend(X, Y, legends):
+"""
+Merge all regend into dataframe with same index.
+"""
+def merge_legend(X, Y, legends):
     unique_x = np.unique(X)
     unique_legend = np.unique(legends)
     
@@ -71,7 +102,10 @@ def mergeLegend(X, Y, legends):
         
     return df_merge
 
-def drawBarChart(X, Y, title, legend, sequence,  
+"""
+Draw chart
+"""
+def draw_bar_chart(x, y, title, legend, sequence,  
 					 options = None):
     imgdata = StringIO.StringIO()
 
@@ -82,49 +116,20 @@ def drawBarChart(X, Y, title, legend, sequence,
         u_legend = np.array([title])
         u_legend_cnt = 1
     
-    """
-    Set style option
-    """
-    if options.isExist('style'):
-        plt.style.use(options.getOption('style'))
+    # Set style options
+    option_dict = json.loads(options)
     
-    """
-    Set figure options
-    """
-    if options.isExist('fig'):
-        fig_size_x = options.getOption('fig.x_size')
-        fig_size_y = options.getOption('fig.y_size')
-        
-    """
-    Set legend options
-    """
-    if options.isExist('legend'):
-        legend_loc = options.getOption('legend.loc')
+    if OPT_STYLE in option_dict.keys():
+        plt.style.use(option_dict[OPT_STYLE])
 
-    """
-    Set color map
-    """
-    if options.isExist('color'):
-        color_map = []
-        if (options.isExist('color.pallete')):
-            color_map = options.getOption('color.pallete')
-        elif (options.isExist('color.map')):
-            color_norm = colors.Normalize(vmin=0, vmax=u_legend_cnt)
-            scalar_map = cmx.ScalarMappable(norm=color_norm, cmap = options.getOption('color.map'))       
-            for i in range(u_legend_cnt):
-                color_map.append(scalar_map.to_rgba(i))
-    """
-    Set axes options
-    """
-    if options.isExist('axes'):
-        axes_alpha = options.getOption('axes.alpha')
-        axes_format = options.getOption('axes.format')
-        axes_markersize = options.getOption('axes.markersize')
-        axes_linewidth = options.getOption('axes.linewidth')
-        axes_barwidth = options.getOption('axes.barwidth')
+    if (OPT_COLOR_MAP in option_dict.keys()
+        or OPT_COLOR_PALLETE in option_dict.keys()):
+        set_cycler(option_dict, u_legend_cnt)
         
+    set_mpl_option(option_dict)
+    
+	# Draw chart and bind data
     fig, ax = plt.subplots()
-    fig.set_size_inches(fig_size_x, fig_size_y)  
     ax.set_title(title)
     
     if sequence.size != 0:
@@ -136,22 +141,28 @@ def drawBarChart(X, Y, title, legend, sequence,
         seq = np.arange(u_legend_cnt)
         sorted_seq_index = np.arange(u_legend_cnt)
         
-    df = mergeLegend(X, Y, legend) 
+    df = merge_legend(x, y, legend) 
+    
+    # Set bar width
+    if (OPT_BAR_WIDTH in option_dict.keys()):
+        axes_barwidth = option_dict[OPT_BAR_WIDTH]
+    else:
+        bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+        axes_barwidth = set_bar_width(bbox.width, df.shape[0], u_legend_cnt)    
     
     idx = 0 
     for i in sorted_seq_index:
         subX = df['X']
         subY = df['Y_' + u_legend[i]]
         
-        ax.bar(np.array(df.index.tolist()) + (axes_barwidth * idx), subY, axes_barwidth, 
-                alpha=axes_alpha, 
-                color=color_map[seq[i]],
+        ax.bar(np.array(df.index.tolist()) + (axes_barwidth * idx), subY, 
+                axes_barwidth, 
                 label=u_legend[i])
         idx = idx + 1
     ax.set_xticks(np.array(df.index.tolist()) + axes_barwidth/u_legend_cnt)    
     ax.set_xticklabels(df['X'])
         
-    ax.legend(loc = legend_loc, fontsize='x-small')    
+    ax.legend()  
     plt.savefig(imgdata, format='png')
     imgdata.seek(0)
     return base64.b64encode(imgdata.buf)
@@ -164,13 +175,6 @@ if p_sequence:
 else:
 	sequence = np.array([])
 
-title = p_title
-
-if p_option:
-	opt = MyChartOption(p_option)
-else:
-	opt = None
-
-return drawBarChart(X, Y, title, legend, sequence, opt)
+return draw_bar_chart(X, Y, p_title, legend, sequence, p_option)
 $BODY$;
 
