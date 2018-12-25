@@ -107,5 +107,6 @@ Chart Options:
     - axes.color_map
     - axes.color_pallete
     - axes.color_alpha
-    - axes.band_color : in only band chart
-    - axes.band_color_alpha : in only band chart
+    - axes.band_color : in band chart
+    - axes.band_color_alpha : in band chart
+    - axes.bar_width : in bar chart
