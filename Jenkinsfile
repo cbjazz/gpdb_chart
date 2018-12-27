@@ -29,9 +29,7 @@ pipeline {
             post {
                 always {
                     //Archive unit tests for the future
-                    archiveArtifacts(allowEmptyArchive: true,
-                                    artifacts: 'dist/*whl',
-                                    fingerprint: true)
+                    archiveArtifacts allowEmptyArchive: true, artifacts: 'dist/*whl', fingerprint: true
                 }
             }
         }
