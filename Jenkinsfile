@@ -20,6 +20,43 @@ pipeline {
                 }
             }
         }
+
+
+        stage('Static code metrics') {
+            steps {
+                echo "Raw metrics"
+                sh  ''' source activate gpchart
+                        radon raw --json gpchart > raw_report.json
+                        radon cc --json gpchart > cc_report.json
+                        radon mi --json gpchart > mi_report.json
+                    '''
+                echo "Test coverage"
+                sh  ''' source activate gpchart
+                        coverage run gpchart/iris.py
+                        python -m coverage xml -o reports/coverage.xml
+                    '''
+                echo "Style check"
+                sh  ''' source activate gpchart
+                        pylint gpchart || true
+                    '''
+            }
+            post{
+                always{
+                    step([$class: 'CoberturaPublisher',
+                                   autoUpdateHealth: false,
+                                   autoUpdateStability: false,
+                                   coberturaReportFile: 'reports/coverage.xml',
+                                   failNoReports: false,
+                                   failUnhealthy: false,
+                                   failUnstable: false,
+                                   maxNumberOfBuilds: 10,
+                                   onlyStable: false,
+                                   sourceEncoding: 'ASCII',
+                                   zoomCoverageChart: false])
+                }
+            }
+        }
+
         stage('Build package') {
             when {
                 expression {

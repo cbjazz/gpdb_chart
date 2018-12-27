@@ -1,9 +1,14 @@
-def sum(arg):
+'''
+This is written for CI Test
+'''
+def sum_test(arg):
+    '''
+    Add all elements
+    '''
     total = 0
     for val in arg:
         total += val
     return total
 
 if __name__ == '__main__':
-    total = sum([1,2,3])
-    print(total)
+    print(sum([1, 2, 3]))
