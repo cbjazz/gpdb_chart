@@ -1,11 +1,28 @@
 pipeline {
     agent any
 
+    triggers {
+        pollSCM('*/5 * * * 1-5')
+    }
+
+    options {
+        skipDefaultCheckout(true)
+        // Keep the 10 most recent builds
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timestamps()
+    }
+
     environment {
       PATH="/Users/choic3/anaconda3/bin:/Users/choic3/anaconda/anaconda/bin:$PATH"
     }
 
     stages {
+
+        stage ("Code pull"){
+            steps{
+                checkout scm
+            }
+        }
 
         stage('Static code metrics') {
             steps {
