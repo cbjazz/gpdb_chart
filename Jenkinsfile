@@ -2,28 +2,41 @@ pipeline {
     agent any
 
     stages {
-        stage('Build') {
+        stage('Unit tests') {
             steps {
-                echo 'Building'
+                sh ''' python -m pytest --verbose --junit-xml reports/unit_tests.xml
+                   '''
+        }
+        post {
+            always {
+                //Archive unit tests for the future
+                junit (allowEmptyResults: true,
+                      testResults: './reports/unit_tests.xml',
+                      fingerprint: true)
             }
         }
-        stage('Test') {
-            steps {
-                echo 'Testing'
-            }
+        stage('Build package') {
+            when {
+                expression {
+                    currentBuild.result == null || currentBuild.result == 'SUCCESS'
+                }
         }
-        stage('Deploy') {
-            steps {
-                echo 'Deploying'
+        steps {
+            sh ''' python setup.py bdist_wheel
+               '''
+        }
+        post {
+            always {
+                //Archive unit tests for the future
+                archiveArtifacts(allowEmptyArchive: true,
+                                artifacts: 'dist/*whl',
+                                fingerprint: true)
             }
         }
     }
     post {
         always {
-            echo 'This will always run'
-        }
-        success {
-            echo 'This will run only if successful'
+            sh 'conda remove --yes -n ${BUILD_TAG} --all'            
         }
         failure {
             echo 'This will run only if failed'
