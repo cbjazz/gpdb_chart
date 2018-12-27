@@ -5,4 +5,5 @@ def sum(arg):
     return total
 
 if __name__ == '__main__':
-    sum([1,2,3])
+    total = sum([1,2,3])
+    print(total)

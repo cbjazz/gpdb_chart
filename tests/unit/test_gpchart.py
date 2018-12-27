@@ -1,6 +1,6 @@
 import unittest
 
-from gpchart import sum
+from gpchart.gpchart import sum
 
 class TestSum(unittest.TestCase):
 

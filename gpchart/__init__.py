@@ -1,1 +1,0 @@
-from gpchart import sum
