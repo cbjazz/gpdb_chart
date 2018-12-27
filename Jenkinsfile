@@ -6,6 +6,7 @@ pipeline {
             steps {
                 sh ''' python -m pytest --verbose --junit-xml reports/unit_tests.xml
                    '''
+            }
         }
         post {
             always {
