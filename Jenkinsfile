@@ -7,13 +7,13 @@ pipeline {
                 sh ''' python -m pytest --verbose --junit-xml reports/unit_tests.xml
                    '''
             }
-        }
-        post {
-            always {
-                //Archive unit tests for the future
-                junit (allowEmptyResults: true,
-                      testResults: './reports/unit_tests.xml',
-                      fingerprint: true)
+            post {
+                always {
+                    //Archive unit tests for the future
+                    junit (allowEmptyResults: true,
+                          testResults: './reports/unit_tests.xml',
+                          fingerprint: true)
+                }
             }
         }
         stage('Build package') {
@@ -26,13 +26,13 @@ pipeline {
                 sh ''' python setup.py bdist_wheel
                    '''
             }
-        }
-        post {
-            always {
-                //Archive unit tests for the future
-                archiveArtifacts(allowEmptyArchive: true,
-                                artifacts: 'dist/*whl',
-                                fingerprint: true)
+            post {
+                always {
+                    //Archive unit tests for the future
+                    archiveArtifacts(allowEmptyArchive: true,
+                                    artifacts: 'dist/*whl',
+                                    fingerprint: true)
+                }
             }
         }
     }
