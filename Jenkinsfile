@@ -57,23 +57,6 @@ pipeline {
             }
         }
 
-        stage('Acceptance tests') {
-            steps {
-                sh  ''' source activate gpchart
-                        behave -f=formatters.cucumber_json:PrettyCucumberJSONFormatter -o ./reports/acceptance.json || true
-                    '''
-            }
-            post {
-                always {
-                    cucumber (buildStatus: 'SUCCESS',
-                    fileIncludePattern: '**/*.json',
-                    jsonReportDirectory: './reports/',
-                    parallelTesting: true,
-                    sortingMethod: 'ALPHABETICAL')
-                }
-            }
-        }
-
         stage('Build package') {
             when {
                 expression {
