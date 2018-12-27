@@ -34,7 +34,7 @@ pipeline {
                 echo "Test coverage"
                 sh  ''' source activate gpchart
                         coverage run gpchart/gpchart.py
-                        python -m coverage xml -o reports/coverage.xml
+                        python -m coverage xml -o **/reports/coverage.xml
                     '''
                 echo "Style check"
                 sh  ''' source activate gpchart
@@ -61,7 +61,7 @@ pipeline {
         stage('Unit tests') {
             steps {
                 sh ''' source activate gpchart
-                       python -m pytest --verbose --junit-xml reports/unit_tests.xml
+                       python -m pytest --verbose --junit-xml **/reports/unit_tests.xml
                    '''
             }
             post {
