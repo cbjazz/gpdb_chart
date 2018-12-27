@@ -27,7 +27,7 @@ pipeline {
                 }
             }
             steps {
-                sh ''' source acitvate gpchart
+                sh ''' source activate gpchart
                        python setup.py bdist_wheel
                    '''
             }
