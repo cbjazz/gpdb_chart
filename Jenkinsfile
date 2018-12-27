@@ -6,21 +6,6 @@ pipeline {
     }
 
     stages {
-        stage('Unit tests') {
-            steps {
-                sh ''' source activate gpchart
-                       python -m pytest --verbose --junit-xml reports/unit_tests.xml
-                   '''
-            }
-            post {
-                always {
-                    //Archive unit tests for the future
-                    junit (allowEmptyResults: true,
-                          testResults: './reports/unit_tests.xml')
-                }
-            }
-        }
-
 
         stage('Static code metrics') {
             steps {
@@ -53,6 +38,38 @@ pipeline {
                                    onlyStable: false,
                                    sourceEncoding: 'ASCII',
                                    zoomCoverageChart: false])
+                }
+            }
+        }
+
+        stage('Unit tests') {
+            steps {
+                sh ''' source activate gpchart
+                       python -m pytest --verbose --junit-xml reports/unit_tests.xml
+                   '''
+            }
+            post {
+                always {
+                    //Archive unit tests for the future
+                    junit (allowEmptyResults: true,
+                          testResults: './reports/unit_tests.xml')
+                }
+            }
+        }
+
+        stage('Acceptance tests') {
+            steps {
+                sh  ''' source activate gpchart
+                        behave -f=formatters.cucumber_json:PrettyCucumberJSONFormatter -o ./reports/acceptance.json || true
+                    '''
+            }
+            post {
+                always {
+                    cucumber (buildStatus: 'SUCCESS',
+                    fileIncludePattern: '**/*.json',
+                    jsonReportDirectory: './reports/',
+                    parallelTesting: true,
+                    sortingMethod: 'ALPHABETICAL')
                 }
             }
         }
