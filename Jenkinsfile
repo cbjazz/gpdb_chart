@@ -32,7 +32,7 @@ pipeline {
                     '''
                 echo "Test coverage"
                 sh  ''' source activate gpchart
-                        coverage run gpchart/iris.py
+                        coverage run gpchart/gpchart.py
                         python -m coverage xml -o reports/coverage.xml
                     '''
                 echo "Style check"
