@@ -22,10 +22,10 @@ pipeline {
                     currentBuild.result == null || currentBuild.result == 'SUCCESS'
                 }
             }
-        }
-        steps {
-            sh ''' python setup.py bdist_wheel
-               '''
+            steps {
+                sh ''' python setup.py bdist_wheel
+                   '''
+            }
         }
         post {
             always {
