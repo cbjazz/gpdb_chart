@@ -1,10 +1,25 @@
 pipeline {
     agent any
 
+    environment {
+      PATH="/Users/choic3/anaconda3/bin:/Users/choic3/anaconda/anaconda/bin:$PATH"
+    }
+
     stages {
+
+        stage('Build environment') {
+            steps {
+                echo "Building virtualenv"
+                sh  ''' conda create --yes -n ${BUILD_TAG} python
+                        source activate ${BUILD_TAG}
+                    '''
+            }
+        }
+
         stage('Unit tests') {
             steps {
-                sh ''' python -m pytest --verbose --junit-xml reports/unit_tests.xml
+                sh ''' source activate ${BUILD_TAG}
+                       python -m pytest --verbose --junit-xml reports/unit_tests.xml
                    '''
             }
             post {
@@ -22,7 +37,8 @@ pipeline {
                 }
             }
             steps {
-                sh ''' python setup.py bdist_wheel
+                sh ''' source acitvate ${BUILD_TAG}
+                       python setup.py bdist_wheel
                    '''
             }
             post {
