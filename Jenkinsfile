@@ -6,16 +6,6 @@ pipeline {
     }
 
     stages {
-
-        stage('Build environment') {
-            steps {
-                echo "Building virtualenv"
-                sh  ''' conda create --yes -n gpchart python
-                        source activate gpchart 
-                    '''
-            }
-        }
-
         stage('Unit tests') {
             steps {
                 sh ''' source activate gpchart
