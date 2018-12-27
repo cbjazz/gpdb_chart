@@ -10,15 +10,15 @@ pipeline {
         stage('Build environment') {
             steps {
                 echo "Building virtualenv"
-                sh  ''' conda create --yes -n ${BUILD_TAG} python
-                        source activate ${BUILD_TAG}
+                sh  ''' conda create --yes -n gpchart python
+                        source activate gpchart 
                     '''
             }
         }
 
         stage('Unit tests') {
             steps {
-                sh ''' source activate ${BUILD_TAG}
+                sh ''' source activate gpchart
                        python -m pytest --verbose --junit-xml reports/unit_tests.xml
                    '''
             }
@@ -37,7 +37,7 @@ pipeline {
                 }
             }
             steps {
-                sh ''' source acitvate ${BUILD_TAG}
+                sh ''' source acitvate gpchart
                        python setup.py bdist_wheel
                    '''
             }
@@ -50,9 +50,6 @@ pipeline {
         }
     }
     post {
-        always {
-            sh 'conda remove --yes -n ${BUILD_TAG} --all'            
-        }
         failure {
             echo 'This will run only if failed'
         }
