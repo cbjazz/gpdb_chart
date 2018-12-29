@@ -3,23 +3,18 @@
 @author cbjazz
 """
 
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
-import matplotlib.cm as cmx
-from cycler import cycler
 import json
 import logging
 import base64
 import io
 import sys
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+import matplotlib.cm as cmx
+from cycler import cycler
 
-if sys.version_info < (3, 0):
-    python_major_version = 2
-else:
-    python_major_version = 3
-
-if python_major_version == 2:
+if sys.version_info[0] < 3:
     import StringIO
 
 #Define chart options excpet of matplotlib
@@ -83,7 +78,7 @@ class GpdbChart:
                     logging.warning(key + " is unknown... skip")
                 except ValueError:
                     logging.warning("%s of %s unrecognize...skip"%
-                        (self.option_dict[key], key))
+                                    (self.option_dict[key], key))
 
     def set_color_map(self, value, alpha=1.0, max_color_cnt=10):
         """This creates scalar color map using gradient map.
@@ -106,7 +101,7 @@ class GpdbChart:
         color_map = []
         color_norm = colors.Normalize(vmin=0, vmax=max_color_cnt)
         scalar_map = cmx.ScalarMappable(norm=color_norm,
-                                       cmap=value)
+                                        cmap=value)
         color_map = [scalar_map.to_rgba(i, alpha=alpha)
                      for i in range(max_color_cnt)]
         return color_map
@@ -136,9 +131,9 @@ class GpdbChart:
                          for val in self.option_dict[OPT_COLOR_PALLETE]]
         elif OPT_COLOR_MAP in self.option_dict.keys():
             color_map = self.set_color_map(self.option_dict[OPT_COLOR_MAP],
-                                      alpha, max_color_cnt)
+                                           alpha, max_color_cnt)
         if color_map:
-            mpl.rcParams[OPT_PROP_CYCLE] = cycler(color = color_map)
+            mpl.rcParams[OPT_PROP_CYCLE] = cycler(color=color_map)
 
     def draw_chart(self, x, y, legend, sequence):
         """Abstract memthod.
@@ -161,14 +156,16 @@ class GpdbChart:
         ----------
         str : base64 encoded image string
         """
-        if python_major_version == 3:
+        if sys.version_info[0] >= 3:
             imgdata = io.BytesIO()
         else:
-            imgdata = io.StringIO()
+            imgdata = StringIO.StringIO()
+
         plt.savefig(imgdata, format='png')
         plt.close()
         imgdata.seek(0)
-        if python_major_version == 3:
+
+        if sys.version_info[0] >= 3:
             return base64.b64encode(imgdata.read())
         else:
             return base64.b64encode(imgdata.buf)

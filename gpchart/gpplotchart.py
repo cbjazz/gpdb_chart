@@ -5,14 +5,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from gpchart.gpchart import GpdbChart
+from gpchart import GpdbChart
 
 class GpdbPlotChart(GpdbChart):
     """
-    This class generate basic plot (scatter or line) chart.
+    This class makes basic plot (scatter or line) chart.
     """
-    fig = None
-    ax = None
 
     def __init__(self, title, options):
         """
@@ -65,7 +63,7 @@ class GpdbPlotChart(GpdbChart):
         if sequence.size != 0:
             seq = []
             for i in range(u_legend_cnt):
-                seq.append(sequence[np.where(legend==u_legend[i])][0])
+                seq.append(sequence[np.where(legend == u_legend[i])][0])
             sorted_seq_index = np.argsort(seq)
         else:
             seq = np.arange(u_legend_cnt)
@@ -73,14 +71,14 @@ class GpdbPlotChart(GpdbChart):
 
         # Bind data
         for i in sorted_seq_index:
-            sub_x = x[np.where(legend==u_legend[i])]
-            sub_y = y[np.where(legend==u_legend[i])]
+            sub_x = x[np.where(legend == u_legend[i])]
+            sub_y = y[np.where(legend == u_legend[i])]
             self.ax.plot(sub_x, sub_y, label=u_legend[i])
 
         self.ax.legend()
 
 if __name__ == '__main__':
-    options = '''{
+    OPTIONS = '''{
         "style":"bmh",
         "figure.figsize": [12.0, 6.0],
         "legend.loc":"upper right",
@@ -88,6 +86,6 @@ if __name__ == '__main__':
         "axes.color_map":"PuOr",
         "axes.color_alpha":0.7
     }'''
-    chart = GpdbPlotChart('test', options)
-    chart.draw_chart([1,2,3], [1,2,3], ['A', 'A', 'A'], [1,1,1])
-    chart.save_file('test.png')
+    chart = GpdbPlotChart('test', OPTIONS)
+    chart.draw_chart([1, 2, 3], [1, 2, 3], ['A', 'A', 'A'], [1, 1, 1])
+    chart.save_file('test_plot.png')

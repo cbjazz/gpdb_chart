@@ -33,7 +33,8 @@ pipeline {
                     '''
                 echo "Test coverage"
                 sh  ''' source activate gpchart
-                        coverage run gpchart/gpchart.py
+                        coverage run gpchart/gpplotchart.py
+                        coverage run gpchart/gpboxchart.py
                         python -m coverage xml -o reports/coverage.xml
                     '''
                 echo "Style check"
