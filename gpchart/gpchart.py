@@ -12,7 +12,15 @@ import json
 import logging
 import base64
 import io
-from io import StringIO
+import sys
+
+if sys.version_info < (3, 0):
+    python_major_version = 2
+else
+    python_major_version = 3
+
+if python_major_version == 2:
+    import StringIO
 
 #Define chart options excpet of matplotlib
 OPT_STYLE = 'style'
@@ -153,11 +161,17 @@ class GpdbChart:
         ----------
         str : base64 encoded image string
         """
-        imgdata = StringIO.stringIO()
+        if python_major_version == 3:
+            imgdata = io.BytesIO()
+        else:
+            imgdata = io.StringIO()
         plt.savefig(imgdata, format='png')
         plt.close()
         imgdata.seek(0)
-        return base64.b64encode(imgdata.buf)
+        if python_major_version == 3:
+            return base64.b64encode(imgdata.buf)
+        else: 
+            return base64.b64encode(imgdata.read())
 
     def save_file(self, filename):
         """
