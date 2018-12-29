@@ -161,7 +161,7 @@ class GpdbChart:
         else:
             imgdata = StringIO.StringIO()
 
-        plt.savefig(imgdata, format='png')
+        self.fig.savefig(imgdata, format='png')
         plt.close()
         imgdata.seek(0)
 
@@ -180,5 +180,8 @@ class GpdbChart:
          filename: str
             file path and filename with extension
         """
+        img = self.save_base64()
         self.fig.savefig(filename)
+        with open(filename, "wb") as fh:
+            fh.write(base64.decodebytes(img))
         plt.close()

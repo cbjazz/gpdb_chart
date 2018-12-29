@@ -79,6 +79,8 @@ class GpdbBoxChart(GpdbChart):
         else:
             color_map = self.set_color_map('hsv', alpha, u_legend_cnt)
 
+        self.fig, self.ax = plt.subplots()
+        
         self.ax.set_title(self.title)
 
         # Set legend sequence

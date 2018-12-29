@@ -57,6 +57,8 @@ class GpdbPlotChart(GpdbChart):
         self._set_mpl_option()
         self._set_cycler(u_legend_cnt)
 
+        self.fig, self.ax = plt.subplots()
+
         self.ax.set_title(self.title)
 
         # Set legend sequence
