@@ -10,6 +10,9 @@ import matplotlib.cm as cmx
 from cycler import cycler
 import json
 import logging
+import base64
+import io
+from io import StringIO
 
 #Define chart options excpet of matplotlib
 OPT_STYLE = 'style'
@@ -39,11 +42,15 @@ class GpdbChart:
 
     option_dict = {}
     title = ''
+    fig = None
+    ax = None
 
     def __init__(self, title, options):
         """
         Parameters
         ----------
+        title : str
+            Chart title
         options : str
             Style options with json format
         """
@@ -108,7 +115,6 @@ class GpdbChart:
         ----------
          max_color_cnt: int, optional (default = 10)
             The number of colors to vectorize
-
         """
         color_map = []
         alpha = 1.0
@@ -127,22 +133,40 @@ class GpdbChart:
             mpl.rcParams[OPT_PROP_CYCLE] = cycler(color = color_map)
 
     def draw_chart(self, x, y, legend, sequence):
-        """This draw chart.
-        @TODO: Now this method is temporal and only use test.
-               We should implement through inheritance.
+        """Abstract memthod.
+        This should be implemented in subclasses.
         """
-        self._set_style()
-        self._set_mpl_option()
-        self._set_cycler()
+        raise NotImplementedError('Subclass must override draw_chart()!')
 
-if __name__ == '__main__':
-    options = '''{
-        "style":"bmh",
-        "figure.figsize": [12.0, 6.0],
-        "legend.loc":"upper right",
-        "lines.marker":"o",
-        "axes.color_map":"PuOr",
-        "axes.color_alpha":0.7
-    }'''
-    chart = GpdbChart('test', options)
-    chart.draw_chart([1,2,3], [1,2,3], ['A', 'A', 'A'], [1,1,1])
+    def show(self):
+        """
+        This shows the plot on display.
+        """
+        plt.show()
+        plt.close()
+
+    def save_base64(self):
+        """
+        This encodes image to base64.
+
+        RETURNS
+        ----------
+        str : base64 encoded image string
+        """
+        imgdata = StringIO.stringIO()
+        plt.savefig(imgdata, format='png')
+        plt.close()
+        imgdata.seek(0)
+        return base64.b64encode(imgdata.buf)
+
+    def save_file(self, filename):
+        """
+        This stores chart to image file.
+
+        Parameters
+        ----------
+         filename: str
+            file path and filename with extension
+        """
+        self.fig.savefig(filename)
+        plt.close()
