@@ -22,7 +22,6 @@ class GpdbPlotChart(GpdbChart):
             Style options with json format
         """
         GpdbChart.__init__(self, title, options)
-        self.fig, self.ax = plt.subplots()
 
     def draw_chart(self, x, y, legend, sequence):
         """This draws basic plot (line or scatter) chart.

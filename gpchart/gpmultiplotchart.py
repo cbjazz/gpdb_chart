@@ -11,13 +11,13 @@ from gpchart import OPT_COLOR_PALLETE
 from gpchart import OPT_COLOR_MAP
 
 
-class GpdbBoxChart(GpdbChart):
+class GpdbMultiPlotChart(GpdbChart):
     """
-    This class makes box plot chart.
+    This class makes multi plot chart.
     """
-    whiskers = 1.5
+    is_vertical = False
 
-    def __init__(self, title, options, whiskers=1.5):
+    def __init__(self, title, options, is_vertical=False):
         """
         Parameters
         ----------
@@ -25,14 +25,14 @@ class GpdbBoxChart(GpdbChart):
             Chart title
         options : str
             Style options with json format
-        whiskers : float, optional (default = 1.5)
-            Whiskers length of box
+        is_vertical : boolean, optional (default = False)
+            Vertial aligned subplots
         """
         GpdbChart.__init__(self, title, options)
-        self.whiskers = whiskers
+        self.is_vertical = is_vertical
 
     def draw_chart(self, x, y, legend, sequence):
-        """This draws basic plot (line or scatter) chart.
+        """This draws multi plot (line or scatter) chart.
         Args (x, y, legend and sequence) should  have same length.
 
         Parameters
@@ -47,6 +47,7 @@ class GpdbBoxChart(GpdbChart):
             Legends are sorted by sequence number ascendingly.
         """
         # We use numpy array for futher compatibility.
+        x = np.array(x)
         y = np.array(y)
         legend = np.array(legend)
         sequence = np.array(sequence)
@@ -78,9 +79,11 @@ class GpdbBoxChart(GpdbChart):
         else:
             color_map = self.set_color_map('hsv', alpha, u_legend_cnt)
 
-        self.fig, self.ax = plt.subplots()
-
-        self.ax.set_title(self.title)
+        # Draw chart and bind data
+        if self.is_vertical:
+            self.fig, self.ax = plt.subplots(u_legend_cnt, 1)
+        else:
+            self.fig, self.ax = plt.subplots(1, u_legend_cnt)
 
         # Set legend sequence
         if sequence.size != 0:
@@ -92,37 +95,50 @@ class GpdbBoxChart(GpdbChart):
             seq = np.arange(u_legend_cnt)
             sorted_seq_index = np.arange(u_legend_cnt)
 
+        y_high_limit = np.max(y)
+        y_low_limit = np.min(y)
+
+        x_high_limit = np.max(x)
+        x_low_limit = np.min(x)
+
         # Bind data
-        data = []
-        sorted_legend = []
-        if u_legend_cnt > 1:
-            for i in sorted_seq_index:
-                sub_y = y[np.where(legend == u_legend[i])]
-                data.append(sub_y)
-                sorted_legend.append(u_legend[i])
-        else:
-            data.append(y)
-            sorted_legend.append(self.title)
+        idx = 0
+        for i in sorted_seq_index:
+            sub_x = x[np.where(legend == u_legend[i])]
+            sub_y = y[np.where(legend == u_legend[i])]
 
-        boxplot = self.ax.boxplot(data,
-                                  patch_artist=True,
-                                  whis=self.whiskers)
+            self.ax[idx].set_title(u_legend[i])
+            if self.is_vertical:
+                self.ax[idx].set_xlim(x_low_limit, x_high_limit)
+            else:
+                self.ax[idx].set_ylim(y_low_limit, y_high_limit)
 
-        # fill the box with color map
-        for i in range(u_legend_cnt):
-            box = boxplot['boxes'][i]
-            box.set_facecolor(color_map[i])
+            self.ax[idx].plot(sub_x, sub_y,
+                              label=u_legend[i], color=color_map[idx])
 
-        self.ax.legend()
+            if idx != 0:
+                if self.is_vertical == False:
+                    # Only draw y-label to left axes in case of horizontal.
+                    self.ax[idx].set_yticklabels([])
+            if idx != u_legend_cnt - 1:
+                if self.is_vertical:
+                    # Only draw x-label to bottom axes in case of vertical.
+                    self.ax[idx].set_xticklabels([])
+            idx = idx + 1
 
 if __name__ == '__main__':
     OPTIONS = '''{
         "style":"bmh",
         "figure.figsize": [12.0, 6.0],
         "legend.loc":"upper right",
-        "axes.color_map":"PuOr",
-        "axes.color_alpha":0.7
+        "axes.color_map":"hsv",
+        "axes.color_alpha":0.7,
+        "figure.subplot.wspace":0.1,
+        "figure.subplot.hspace":0.1
     }'''
-    chart = GpdbBoxChart('test', OPTIONS, 1.0)
-    chart.draw_chart([1, 2, 3], [1, 2, 3], ['A', 'A', 'A'], [1, 1, 1])
-    chart.save_file('test_box.png')
+    chart = GpdbMultiPlotChart('test', OPTIONS, False)
+    chart.draw_chart([1, 2, 3, 4, 5, 1, 2, 3, 4],
+                     [1, 2, 3, 4, 5, 6, 4, 2, 6],
+                     ['A', 'A', 'A', 'A', 'A', 'B', 'B', 'B', 'B'],
+                     [1, 1, 1, 1, 1, 2, 2, 2, 2])
+    chart.save_file("multi_bar_chart.png")

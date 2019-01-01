@@ -37,6 +37,7 @@ pipeline {
                         coverage run gpchart/gpboxchart.py
                         coverage run gpchart/gpbarchart.py
                         coverage run gpchart/gpmabandplotchart.py
+                        coverage run gpchart/gpmultiplotchart.py
                         python -m coverage xml -o reports/coverage.xml
                     '''
                 echo "Style check"
